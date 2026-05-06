@@ -168,6 +168,52 @@ class BankingConcurrentAndTransferIT {
         assertThat(res.getToAccount().getBalance()).isEqualTo(750);
     }
 
+    /**
+     * A→B 송금과 B→A 송금이 동시에 실행될 때, 계좌 ID 사전순 잠금으로 데드락 없이 끝나고
+     * 순환 송금이므로 양쪽 잔액은 초기와 같아야 한다.
+     */
+    @Test
+    void simultaneousMutualTransfers_eachSends1000ToTheOther_netBalancesUnchanged() throws Exception {
+        BankUser ua = saveUser("mut-a");
+        BankUser ub = saveUser("mut-b");
+        AccountResponse accA = accountService.openAccount(openRequest(ua.getUserId()));
+        AccountResponse accB = accountService.openAccount(openRequest(ub.getUserId()));
+        String idA = accA.getAccountId();
+        String idB = accB.getAccountId();
+
+        int initial = 50_000;
+        transactionService.deposit(idA, initial);
+        transactionService.deposit(idB, initial);
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        int amount = 1_000;
+
+        Future<TransferResponse> aToB = pool.submit(() -> {
+            start.await();
+            return transactionService.transfer(idA, idB, amount);
+        });
+        Future<TransferResponse> bToA = pool.submit(() -> {
+            start.await();
+            return transactionService.transfer(idB, idA, amount);
+        });
+        start.countDown();
+
+        TransferResponse resAtoB = aToB.get(2, TimeUnit.MINUTES);
+        TransferResponse resBtoA = bToA.get(2, TimeUnit.MINUTES);
+        pool.shutdown();
+
+        assertThat(resAtoB.getFromAccount().getAccountId()).isEqualTo(idA);
+        assertThat(resAtoB.getToAccount().getAccountId()).isEqualTo(idB);
+        assertThat(resBtoA.getFromAccount().getAccountId()).isEqualTo(idB);
+        assertThat(resBtoA.getToAccount().getAccountId()).isEqualTo(idA);
+
+        Account a = accountRepository.findById(idA).orElseThrow();
+        Account b = accountRepository.findById(idB).orElseThrow();
+        assertThat(a.getBalance()).isEqualTo(initial);
+        assertThat(b.getBalance()).isEqualTo(initial);
+    }
+
     private static AccountOpenRequest openRequest(String userId) {
         AccountOpenRequest r = new AccountOpenRequest();
         r.setUserId(userId);

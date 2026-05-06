@@ -1,7 +1,10 @@
 # BankingService
 직접 BankingService의 API 서버와 데이터베이스를 구축해보며 금융 IT의 비즈니스 로직을 연구해보고자 함
+
 참여자 : St2ussy (신철언)
+
 최종 수정일 : 2026/05/06
+
 최종 수정 내용 : Readme 수정
 
 ## 개요

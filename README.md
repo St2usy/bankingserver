@@ -123,3 +123,20 @@ src/main/java/com/corebank
   입출금/송금 시 잔액 변경 전 계좌 행을 잠가 정합성을 보장합니다.
 
 </details>
+
+## 트랜잭션과 격리성 수준
+트랜잭션이란, 데이터베이스에서 작업단위로, 트랜잭션의 작업은 ACID 특성을 가진다.
+- Atomicity
+- Consistency
+- Isolation
+- Durability
+금융권의 데이터는 절대 오류가 나선 안되므로, 트랜잭션의 충돌을 가정하는 'Pessimistic LOCK'을 사용한다.
+
+격리성 수준은 아래의 4가지와 같다
+- Read uncommited : 트랜잭션에서 처리중인, 아직 커밋되지 않은 데이터를 읽기를 허용
+- Read commited : 트랜잭션에서 커밋 완료된 데이터를 읽을 수 있음
+- Repetable Read : 트랜잭션에서 수정, 삭제한 데이터는 Undo 로그에 저장되고, 트랜잭션 중 데이터 읽기 요청이 들어오면, 트랜잭션 시작 전 데이터를 읽게 함.MySQL에서 기본으로 설정한 격리성 수준
+- Serializable Read : 트랜잭션이 순서대로 처리되게끔 보이게 함. 정합성이 가장 높지만 성능이 가장 낮음
+
+** 격리성 수준은 정합성과 동시성의 Trade-Off 이다. 
+

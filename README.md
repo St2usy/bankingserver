@@ -3,9 +3,9 @@
 
 참여자 : St2ussy (신철언)
 
-최종 수정일 : 2026/05/08
+최종 수정일 : 2026/05/14
 
-최종 수정 내용 : Readme 수정
+최종 수정 내용 : pom.xml 수정 (23번째 줄 testContianer버전 수정, testContainer와 Docker 충돌)
 
 ## 개요
 - **Spring Boot 3.2.5 / Java 17**

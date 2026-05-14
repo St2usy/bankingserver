@@ -19,6 +19,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Docker Desktop 4.19+ / WSL: 구버전 docker-java는 API 협상 실패(400) → Testcontainers 올림 -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <dependencies>

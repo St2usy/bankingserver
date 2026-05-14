@@ -154,6 +154,54 @@ class BankingConcurrentAndTransferIT {
     }
 
     @Test
+    void deposit_withSameIdempotencyKeyTwice_appliesOnceAndReturnsSamePayload() {
+        BankUser user = saveUser("idem-dep");
+        AccountResponse acc = accountService.openAccount(openRequest(user.getUserId()));
+        String accountId = acc.getAccountId();
+        String key = "idem-key-dep-" + UUID.randomUUID();
+
+        AccountResponse first = transactionService.deposit(accountId, 500, key);
+        AccountResponse second = transactionService.deposit(accountId, 500, key);
+
+        assertThat(first).isEqualTo(second);
+        Account loaded = accountRepository.findById(accountId).orElseThrow();
+        assertThat(loaded.getBalance()).isEqualTo(500);
+    }
+
+    @Test
+    void deposit_sameIdempotencyKeyDifferentAmount_throwsConflict() {
+        BankUser user = saveUser("idem-cf");
+        AccountResponse acc = accountService.openAccount(openRequest(user.getUserId()));
+        String accountId = acc.getAccountId();
+        String key = "idem-key-cf-" + UUID.randomUUID();
+
+        transactionService.deposit(accountId, 100, key);
+
+        assertThatThrownBy(() -> transactionService.deposit(accountId, 200, key))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("멱등성");
+    }
+
+    @Test
+    void transfer_withSameIdempotencyKeyTwice_movesFundsOnce() {
+        BankUser ua = saveUser("idem-tr-a");
+        BankUser ub = saveUser("idem-tr-b");
+        AccountResponse accA = accountService.openAccount(openRequest(ua.getUserId()));
+        AccountResponse accB = accountService.openAccount(openRequest(ub.getUserId()));
+        String idA = accA.getAccountId();
+        String idB = accB.getAccountId();
+        transactionService.deposit(idA, 5_000);
+
+        String key = "idem-key-tr-" + UUID.randomUUID();
+        TransferResponse first = transactionService.transfer(idA, idB, 300, key);
+        TransferResponse second = transactionService.transfer(idA, idB, 300, key);
+
+        assertThat(first).isEqualTo(second);
+        assertThat(accountRepository.findById(idA).orElseThrow().getBalance()).isEqualTo(4_700);
+        assertThat(accountRepository.findById(idB).orElseThrow().getBalance()).isEqualTo(300);
+    }
+
+    @Test
     void transferHappyPath_singleTransactionSemantics() {
         BankUser ua = saveUser("ok-a");
         BankUser ub = saveUser("ok-b");

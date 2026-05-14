@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,7 +33,7 @@ public class IdempotencyRecord {
     @Column(name = "operation", nullable = false, length = 32)
     private IdempotencyOperation operation;
 
-    @Lob
-    @Column(name = "response_json")
+    /** MySQL에서 {@code @Lob}+String이 과도하게 작은 타입으로 매핑되어 잘리는 경우가 있어 LONGTEXT로 고정합니다. */
+    @Column(name = "response_json", columnDefinition = "LONGTEXT")
     private String responseJson;
 }

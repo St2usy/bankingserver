@@ -13,13 +13,12 @@ import com.corebank.repository.IdempotencyRecordRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class TransactionService {
 
     private static final String TARGET_DEPOSIT = "DEPOSIT";
@@ -30,9 +29,24 @@ public class TransactionService {
     private final AccountHistoryRepository accountHistoryRepository;
     private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final ObjectMapper objectMapper;
+    /** 동일 클래스의 {@code @Transactional} 메서드를 호출할 때 프록시를 타도록 위임용(자기 호출은 AOP 미적용). */
+    private final TransactionService self;
+
+    public TransactionService(
+            AccountRepository accountRepository,
+            AccountHistoryRepository accountHistoryRepository,
+            IdempotencyRecordRepository idempotencyRecordRepository,
+            ObjectMapper objectMapper,
+            @Lazy TransactionService self) {
+        this.accountRepository = accountRepository;
+        this.accountHistoryRepository = accountHistoryRepository;
+        this.idempotencyRecordRepository = idempotencyRecordRepository;
+        this.objectMapper = objectMapper;
+        this.self = self;
+    }
 
     public AccountResponse deposit(String accountId, int amount) {
-        return deposit(accountId, amount, null);
+        return self.deposit(accountId, amount, null);
     }
 
     @Transactional
@@ -51,7 +65,7 @@ public class TransactionService {
     }
 
     public AccountResponse withdraw(String accountId, int amount) {
-        return withdraw(accountId, amount, null);
+        return self.withdraw(accountId, amount, null);
     }
 
     @Transactional
@@ -70,7 +84,7 @@ public class TransactionService {
     }
 
     public TransferResponse transfer(String fromAccountId, String toAccountId, int amount) {
-        return transfer(fromAccountId, toAccountId, amount, null);
+        return self.transfer(fromAccountId, toAccountId, amount, null);
     }
 
     @Transactional
